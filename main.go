@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/MicahParks/keyfunc/v2"
@@ -88,8 +89,11 @@ func init() {
 func validateJWT(jwtB64 string) error {
 	log.Println(jwtB64)
 
+	// Omit padding.
+	jwtB64UrlSafe := strings.ReplaceAll(jwtB64, "=", "")
+
 	// Parse the JWT.
-	token, err := jwt.Parse(jwtB64, jwks.Keyfunc)
+	token, err := jwt.Parse(jwtB64UrlSafe, jwks.Keyfunc)
 	if err != nil {
 		return err
 	}
