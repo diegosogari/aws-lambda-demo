@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -12,9 +13,11 @@ type MyEvent struct {
 	Headers struct {
 		UserClaims string `json:"x-amzn-oidc-data"`
 	} `json:"headers"`
-	Body struct {
-		Name string `json:"name"`
-	} `json:"body"`
+	Body string `json:"body"`
+}
+
+type Body struct {
+	Name string `json:"name"`
 }
 
 type MyReply struct {
@@ -27,9 +30,13 @@ func HandleRequest(ctx context.Context, event *MyEvent) (*MyReply, error) {
 		return nil, fmt.Errorf("received nil event")
 	}
 	log.Print(event.Headers.UserClaims)
+
+	var body Body
+	json.Unmarshal([]byte(event.Body), &body)
+
 	reply := MyReply{
 		200,
-		fmt.Sprintf("Hello %s!", event.Body.Name),
+		fmt.Sprintf("Hello %s!", body.Name),
 	}
 	return &reply, nil
 }
