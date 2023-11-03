@@ -87,10 +87,9 @@ func init() {
 }
 
 func validateJWT(jwtB64 string) error {
-	log.Println(jwtB64)
-
 	// Omit padding.
 	jwtB64UrlSafe := strings.ReplaceAll(jwtB64, "=", "")
+	log.Printf("JWT: %s", jwtB64UrlSafe)
 
 	// Parse the JWT.
 	token, err := jwt.Parse(jwtB64UrlSafe, jwks.Keyfunc)
