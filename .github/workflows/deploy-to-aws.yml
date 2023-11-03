@@ -1,0 +1,27 @@
+name: Deploy service to AWS Lambda
+
+on: 
+  push: 
+    branches: 
+      - main
+
+jobs:
+  build-and-upload-binary:
+    name: Build the Go binary and upload to Amazon S3
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '^1.21.3'
+      - run: go build -o bootstrap
+      - run: sudo apt install -y zip && zip demo.zip bootstrap
+
+      - uses: aws-actions/configure-aws-credentials@v4.0.1
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::574563284495:role/gha
+      - run: aws s3api put-object --bucket lambda-20231102013812622900000001 --key demo.zip --body demo.zip --checksum-algorithm SHA256
