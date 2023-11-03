@@ -16,8 +16,10 @@ import (
 
 type MyEvent struct {
 	Headers struct {
-		UserClaims string `json:"x-amzn-oidc-data"`
+		AccessToken string `json:"x-amzn-oidc-accesstoken"`
+		UserClaims  string `json:"x-amzn-oidc-data"`
 	} `json:"headers"`
+
 	Body string `json:"body"`
 }
 
@@ -35,9 +37,12 @@ func HandleRequest(ctx context.Context, event *MyEvent) (*MyReply, error) {
 		return nil, fmt.Errorf("received nil event")
 	}
 
-	err := validateJWT(event.Headers.UserClaims)
-	if err != nil {
-		return nil, err
+	if len(event.Headers.AccessToken) > 0 {
+		log.Printf("AccessToken: %s", event.Headers.AccessToken)
+		err := validateJWT(event.Headers.UserClaims)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var body Body
