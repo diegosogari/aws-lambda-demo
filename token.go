@@ -14,7 +14,7 @@ import (
 )
 
 var jwks *keyfunc.JWKS
-var publicKeys map[string]string
+var publicKeys = map[string]string{}
 
 func init() {
 	// Get the JWKS URL from your AWS region and userPoolId.
