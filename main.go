@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type MyEvent struct {
@@ -43,7 +44,8 @@ func HandleRequest(ctx context.Context, event *MyEvent) (*MyReply, error) {
 			return nil, err
 		}
 
-		log.Print(token.Claims.GetAudience())
+		claims := token.Claims.(jwt.MapClaims)
+		log.Printf("Email: %s", claims["email"])
 	}
 
 	var body Body
