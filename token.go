@@ -1,12 +1,12 @@
 package main
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/MicahParks/keyfunc/v2"
@@ -14,7 +14,7 @@ import (
 )
 
 var jwks *keyfunc.JWKS
-var publicKeys = map[string]string{}
+var publicKeys = map[string]*ecdsa.PublicKey{}
 
 func init() {
 	// Get the JWKS URL from your AWS region and userPoolId.
@@ -45,7 +45,7 @@ func init() {
 
 func getPublicKey(token *jwt.Token) (interface{}, error) {
 	kid := token.Header["kid"].(string)
-	publicKey, ok := publicKeys[kid]
+	key, ok := publicKeys[kid]
 	if !ok {
 		// Get the public key from ALB the endpoint.
 		// https://docs.aws.amazon.com/elasticloadbalancing/latest/application/listener-authenticate-users.html
@@ -65,18 +65,21 @@ func getPublicKey(token *jwt.Token) (interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not read response body")
 		}
-		publicKey = string(body)
-		publicKeys[kid] = publicKey
+
+		key, err = jwt.ParseECPublicKeyFromPEM(body)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse public key")
+		}
+
+		publicKeys[kid] = key
 	}
-	return []byte(publicKey), nil
+	return key, nil
 }
 
 func validateToken(jwtB64 string, keyFunc jwt.Keyfunc, alg string) (*jwt.Token, error) {
-	// Omit padding.
-	jwtB64UrlSafe := strings.ReplaceAll(jwtB64, "=", "")
-	log.Printf("JWT: %s", jwtB64UrlSafe)
+	log.Printf("JWT: %s", jwtB64)
 
-	token, err := jwt.Parse(jwtB64UrlSafe, keyFunc, jwt.WithValidMethods([]string{alg}))
+	token, err := jwt.Parse(jwtB64, keyFunc, jwt.WithValidMethods([]string{alg}), jwt.WithPaddingAllowed())
 	if err != nil {
 		return nil, err
 	}
