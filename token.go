@@ -71,17 +71,17 @@ func getPublicKey(token *jwt.Token) (interface{}, error) {
 	return []byte(publicKey), nil
 }
 
-func validateToken(jwtB64 string, keyFunc jwt.Keyfunc) error {
+func validateToken(jwtB64 string, keyFunc jwt.Keyfunc, alg string) (*jwt.Token, error) {
 	// Omit padding.
 	jwtB64UrlSafe := strings.ReplaceAll(jwtB64, "=", "")
 	log.Printf("JWT: %s", jwtB64UrlSafe)
 
-	token, err := jwt.Parse(jwtB64UrlSafe, keyFunc)
+	token, err := jwt.Parse(jwtB64UrlSafe, keyFunc, jwt.WithValidMethods([]string{alg}))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !token.Valid {
-		return fmt.Errorf("the JWT is invalid")
+		return nil, fmt.Errorf("the JWT is invalid")
 	}
-	return nil
+	return token, nil
 }

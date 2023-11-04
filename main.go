@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
@@ -32,15 +33,17 @@ func HandleRequest(ctx context.Context, event *MyEvent) (*MyReply, error) {
 	}
 
 	if len(event.Headers.AccessToken) > 0 {
-		err := validateToken(event.Headers.AccessToken, jwks.Keyfunc)
+		token, err := validateToken(event.Headers.AccessToken, jwks.Keyfunc, "RS256")
 		if err != nil {
 			return nil, err
 		}
 
-		err = validateToken(event.Headers.UserClaims, getPublicKey)
+		token, err = validateToken(event.Headers.UserClaims, getPublicKey, "ES256")
 		if err != nil {
 			return nil, err
 		}
+
+		log.Print(token.Claims.GetAudience())
 	}
 
 	var body Body
