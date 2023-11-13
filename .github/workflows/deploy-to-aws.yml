@@ -16,12 +16,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4.7.1
         with:
-          python-version: '3.10' 
-      - run: python -m py_compile handler.py
-      - run: sudo apt install -y zip && zip demo.zip handler.py
-
+          python-version: '3.10'
+          cache: 'pipenv'
+          
+      - run: python -m pip install pipenv
+      - run: python -m pipenv install
+      - run: python -m pipenv run python -m py_compile handler.py
+      
+      - run: sudo apt install -y libarchive-tools
+      - run: bsdtar -c -a -f demo.zip handler.py
+      - run: |
+          cd `python -m pipenv run python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'`/.. &&
+          bsdtar -c -a -f $GITHUB_WORKSPACE/demo-deps.zip -s /site-packages/python/ site-packages
+          
       - uses: aws-actions/configure-aws-credentials@v4.0.1
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::574563284495:role/gha
       - run: aws s3api put-object --bucket lambda-20231102013812622900000001 --key demo.zip --body demo.zip --checksum-algorithm SHA256
+      - run: aws s3api put-object --bucket lambda-20231102013812622900000001 --key demo-deps.zip --body demo-deps.zip --checksum-algorithm SHA256
