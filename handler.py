@@ -8,20 +8,18 @@ import requests
 jwks_url = "https://{}/.well-known/jwks.json".format(os.environ["USER_POOL_ENDPOINT"])
 pkeys_url = "https://public-keys.auth.elb.{}.amazonaws.com/".format(os.environ["AWS_REGION"])
 
-logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
-logger = logging.getLogger()
-logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
-logger.info("JWKS: %s", jwks_url)
-logger.info("PKEYS: %s", pkeys_url)
+logging.basicConfig(format='[%(levelname)s] %(message)s', level=os.environ.get("LOG_LEVEL", "INFO"))
+logging.info("JWKS: %s", jwks_url)
+logging.info("PKEYS: %s", pkeys_url)
 
 jwks = jwt.PyJWKClient(jwks_url)
 
 def handle(event, context):
-    logger.debug(json.dumps(event))
+    logging.debug(json.dumps(event))
 
     email = handle_auth(event["headers"])
     if email:
-        logger.info("Email: %s", email)
+        logging.info("Email: %s", email)
 
     body = json.loads(event["body"])
     reply = {
@@ -45,13 +43,13 @@ def handle_auth(headers: dict) -> str:
     return None
 
 def verify_access_token(token: str) -> str:
-    key = jwks.get_signing_key_from_jwt(token)
-    return verify_token(token, key, algorithms=["RS256"])
+    skey = jwks.get_signing_key_from_jwt(token)
+    return verify_token(token, skey.key, algorithms=["RS256"])
 
 def verify_user_claims(token: str) -> str:
     header = jwt.get_unverified_header(token)
-    key = get_public_key_from_url(header["kid"])
-    return verify_token(token, key, algorithms=["ES256"])
+    pkey = get_public_key_from_url(header["kid"])
+    return verify_token(token, pkey, algorithms=["ES256"])
 
 def verify_token(token: str, key: str, algorithms: list[str]) -> str:
     try:
@@ -59,7 +57,7 @@ def verify_token(token: str, key: str, algorithms: list[str]) -> str:
     except Exception as e:
         raise Exception("could not verify token", token, str(e))
     else:
-        logger.info("Token verified: %s", token)
+        logging.info("Token verified: %s", token)
         return payload
 
 @functools.cache
