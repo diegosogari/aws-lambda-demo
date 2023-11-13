@@ -8,18 +8,19 @@ import requests
 jwks_url = "https://{}/.well-known/jwks.json".format(os.environ["USER_POOL_ENDPOINT"])
 pkeys_url = "https://public-keys.auth.elb.{}.amazonaws.com/".format(os.environ["AWS_REGION"])
 
-logging.basicConfig(format='[%(levelname)s] %(message)s', level=os.environ.get("LOG_LEVEL", "INFO"))
-logging.info("JWKS: %s", jwks_url)
-logging.info("PKEYS: %s", pkeys_url)
+logger = logging.getLogger()
+logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
+logger.info("JWKS: %s", jwks_url)
+logger.info("PKEYS: %s", pkeys_url)
 
 jwks = jwt.PyJWKClient(jwks_url)
 
 def handle(event, context):
-    logging.debug(json.dumps(event))
+    logger.debug(json.dumps(event))
 
     email = handle_auth(event["headers"])
     if email:
-        logging.info("Email: %s", email)
+        logger.info("Email: %s", email)
 
     body = json.loads(event["body"])
     reply = {
@@ -57,7 +58,7 @@ def verify_token(token: str, key: str, algorithms: list[str]) -> str:
     except Exception as e:
         raise Exception("could not verify token", token, str(e))
     else:
-        logging.info("Token verified: %s", token)
+        logger.info("Token verified: %s", token)
         return payload
 
 @functools.cache
