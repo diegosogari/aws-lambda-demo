@@ -10,13 +10,15 @@ pkeys_url = "https://public-keys.auth.elb.{}.amazonaws.com/".format(os.environ["
 
 logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 logger.info("JWKS: %s", jwks_url)
 logger.info("PKEYS: %s", pkeys_url)
 
 jwks = jwt.PyJWKClient(jwks_url)
 
 def handle(event, context):
+    logger.debug(json.dumps(event))
+
     email = handle_auth(event["headers"])
     if email:
         logger.info("Email: %s", email)
