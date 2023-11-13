@@ -7,18 +7,18 @@ on:
 
 jobs:
   build-and-upload-binary:
-    name: Build the Go binary and upload to Amazon S3
+    name: Check the Python script and upload to Amazon S3
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-python@v4.7.1
         with:
-          go-version: '^1.21.3'
-      - run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags lambda.norpc -o bootstrap
-      - run: sudo apt install -y zip && zip demo.zip bootstrap
+          python-version: '3.10' 
+      - run: python -m py_compile handler.py
+      - run: sudo apt install -y zip && zip demo.zip handler.py
 
       - uses: aws-actions/configure-aws-credentials@v4.0.1
         with:
