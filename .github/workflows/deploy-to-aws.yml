@@ -1,33 +1,54 @@
 name: Deploy service to AWS Lambda
 
-on: 
-  push: 
-    branches: 
+on:
+  push:
+    branches:
       - main
+    paths:
+      - '.github/workflows/deploy-to-aws.yml'
+      - '**.py'
+      - 'requirements.txt'
 
 jobs:
-  build-and-upload-binary:
-    name: Check the Python script and upload to Amazon S3
+  package-and-upload:
+    name: Package the service and upload it to Amazon S3
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
+    env:
+      S3_BUCKET: lambda-20231102013812622900000001
     steps:
       - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: paths
+        with:
+          filters: |
+            code:
+              - '**/*.py'
+            requirements:
+              - 'requirements.txt'
       - uses: actions/setup-python@v4.7.1
         with:
           python-version: '3.10'
           cache: 'pip'
-
-      - run: "pip install -r requirements.txt --target python --platform manylinux2014_x86_64 --only-binary :all:"
-
-      - run: sudo apt install -y zip
-      - run: zip demo.zip handler.py
-      - run: zip -r demo-deps.zip python
-
       - uses: aws-actions/configure-aws-credentials@v4.0.1
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::574563284495:role/gha
-      - run: aws s3api put-object --bucket lambda-20231102013812622900000001 --key demo.zip --body demo.zip --checksum-algorithm SHA256
-      - run: aws s3api put-object --bucket lambda-20231102013812622900000001 --key demo-deps.zip --body demo-deps.zip --checksum-algorithm SHA256
+      - run: sudo apt install -y zip
+
+      - if: steps.paths.outputs.code == 'true'
+        name: Package and upload the code
+        run: |
+          pip install -r requirements.txt
+          python -m py_compile handler.py
+          zip demo.zip handler.py
+          aws s3api put-object --bucket $S3_BUCKET --key demo.zip --body demo.zip --checksum-algorithm SHA256
+
+      - if: steps.paths.outputs.requirements == 'true'
+        name: Package and upload the dependencies
+        run: |
+          pip install -r requirements.txt --target python --platform manylinux2014_x86_64 --only-binary :all:
+          zip -r demo-deps.zip python
+          aws s3api put-object --bucket $S3_BUCKET --key demo-deps.zip --body demo-deps.zip --checksum-algorithm SHA256
