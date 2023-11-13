@@ -5,8 +5,8 @@ import os
 import functools
 import requests
 
-jwks_url = "https://{}/.well-known/jwks.json".format("cognito-idp.us-east-1.amazonaws.com/us-east-1_zBmc8ytcG")# os.environ["USER_POOL_ENDPOINT"])
-pkeys_url = "https://public-keys.auth.elb.{}.amazonaws.com/".format("us-east-1")# os.environ["AWS_REGION"])
+jwks_url = "https://{}/.well-known/jwks.json".format(os.environ["USER_POOL_ENDPOINT"])
+pkeys_url = "https://public-keys.auth.elb.{}.amazonaws.com/".format(os.environ["AWS_REGION"])
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -15,7 +15,7 @@ logger.info("PKEYS: %s", pkeys_url)
 
 jwks = jwt.PyJWKClient(jwks_url)
 
-def lambda_handler(event, context):
+def handle(event, context):
     email = handle_auth(event["headers"])
     if email:
         logger.info("Email: %s", email)
