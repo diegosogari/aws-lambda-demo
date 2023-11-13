@@ -27,8 +27,8 @@ jobs:
       - run: bsdtar -c -a -f demo.zip handler.py
       - run: |
           cd `python -m pipenv run python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'`/.. &&
-          bsdtar -c -a -f $GITHUB_WORKSPACE/demo-deps.zip -s /site-packages/python/ site-packages
-          
+          bsdtar -c -a -f $GITHUB_WORKSPACE/demo-deps.zip -s /site-packages/python/ site-packages /lib/x86_64-linux-gnu/libc.so.6
+
       - uses: aws-actions/configure-aws-credentials@v4.0.1
         with:
           aws-region: us-east-1
