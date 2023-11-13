@@ -8,6 +8,7 @@ import requests
 jwks_url = "https://{}/.well-known/jwks.json".format(os.environ["USER_POOL_ENDPOINT"])
 pkeys_url = "https://public-keys.auth.elb.{}.amazonaws.com/".format(os.environ["AWS_REGION"])
 
+logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.info("JWKS: %s", jwks_url)
@@ -32,19 +33,35 @@ def handle(event, context):
 def handle_auth(headers: dict) -> str:
     if "x-amzn-oidc-accesstoken" in headers:
         token = headers["x-amzn-oidc-accesstoken"]
-        skey = jwks.get_signing_key_from_jwt(token)
-        jwt.decode(token, skey.key, algorithms=["RS256"])
+        verify_access_token(token)
 
     if "x-amzn-oidc-data" in headers:
         token = headers["x-amzn-oidc-data"]
-        pkey = get_key(jwt.get_unverified_header(token)["kid"])
-        payload = jwt.decode(token, pkey, algorithms=["ES256"])
-        return payload["email"]
-    
+        claims = verify_user_claims(token)
+        return claims["email"]
+
     return None
 
+def verify_access_token(token: str) -> str:
+    key = jwks.get_signing_key_from_jwt(token)
+    return verify_token(token, key, algorithms=["RS256"])
+
+def verify_user_claims(token: str) -> str:
+    header = jwt.get_unverified_header(token)
+    key = get_public_key_from_url(header["kid"])
+    return verify_token(token, key, algorithms=["ES256"])
+
+def verify_token(token: str, key: str, algorithms: list[str]) -> str:
+    try:
+        payload = jwt.decode(token, key, algorithms)
+    except Exception as e:
+        raise Exception("could not verify token", token, str(e))
+    else:
+        logger.info("Token verified: %s", token)
+        return payload
+
 @functools.cache
-def get_key(kid: str) -> str:
+def get_public_key_from_url(kid: str) -> str:
     try:
         return requests.get(pkeys_url + kid).text
     except Exception as e:
