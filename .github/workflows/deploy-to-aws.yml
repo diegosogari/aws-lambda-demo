@@ -6,12 +6,12 @@ on:
       - main
     paths:
       - '.github/workflows/deploy-to-aws.yml'
-      - '**.py'
+      - '**/*.py'
       - 'requirements.txt'
 
 jobs:
   package-and-upload:
-    name: Package the service and upload it to Amazon S3
+    name: Package each function and upload it to Amazon S3
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -24,9 +24,15 @@ jobs:
         id: paths
         with:
           filters: |
-            code:
-              - '**/*.py'
-            requirements:
+            request_handler:
+              - 'request_handler.py'
+            command_handler:
+              - 'command_handler.py'
+            event_publisher:
+              - 'event_publisher.py'
+            event_consumer:
+              - 'event_consumer.py'
+            dependencies:
               - 'requirements.txt'
       - uses: actions/setup-python@v4.7.1
         with:
@@ -37,18 +43,39 @@ jobs:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::574563284495:role/gha
       - run: sudo apt install -y zip
+      - run: pip install -r requirements.txt
 
-      - if: steps.paths.outputs.code == 'true'
+      - if: steps.paths.outputs.request_handler == 'true'
         name: Package and upload the code
         run: |
-          pip install -r requirements.txt
           python -m py_compile handler.py
-          zip demo.zip handler.py
-          aws s3api put-object --bucket $S3_BUCKET --key demo.zip --body demo.zip --checksum-algorithm SHA256
+          zip pkg.zip request_handler.py
+          aws s3api put-object --bucket $S3_BUCKET --key functions/demo/request_handler.zip --body pkg.zip --checksum-algorithm SHA256
 
-      - if: steps.paths.outputs.requirements == 'true'
+      - if: steps.paths.outputs.command_handler == 'true'
+        name: Package and upload the code
+        run: |
+          python -m py_compile handler.py
+          zip pkg.zip command_handler.py
+          aws s3api put-object --bucket $S3_BUCKET --key functions/demo/command_handler.zip --body pkg.zip --checksum-algorithm SHA256
+
+      - if: steps.paths.outputs.event_publisher == 'true'
+        name: Package and upload the code
+        run: |
+          python -m py_compile handler.py
+          zip pkg.zip event_publisher.py
+          aws s3api put-object --bucket $S3_BUCKET --key functions/demo/event_publisher.zip --body pkg.zip --checksum-algorithm SHA256
+
+      - if: steps.paths.outputs.event_consumer == 'true'
+        name: Package and upload the code
+        run: |
+          python -m py_compile handler.py
+          zip pkg.zip event_consumer.py
+          aws s3api put-object --bucket $S3_BUCKET --key functions/demo/event_consumer.zip --body pkg.zip --checksum-algorithm SHA256
+
+      - if: steps.paths.outputs.dependencies == 'true'
         name: Package and upload the dependencies
         run: |
           pip install -r requirements.txt --target python --platform manylinux2014_x86_64 --only-binary :all:
-          zip -r demo-deps.zip python
-          aws s3api put-object --bucket $S3_BUCKET --key demo-deps.zip --body demo-deps.zip --checksum-algorithm SHA256
+          zip -r pkg.zip python
+          aws s3api put-object --bucket $S3_BUCKET --key layers/demo/dependencies.zip --body pkg.zip --checksum-algorithm SHA256
