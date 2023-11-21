@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/deploy-to-aws.yml'
       - '**/*.py'
+      - '!**/*.py'
       - 'requirements.txt'
 
 jobs:
@@ -43,7 +44,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           python -m py_compile *.py
-          zip code.zip *.py */*.py
+          zip -r code.zip * -i *.py -x *_test.py
           aws s3api put-object --bucket $S3_BUCKET --key functions/demo/code.zip --body code.zip --checksum-algorithm SHA256
 
       - if: steps.paths.outputs.dependencies == 'true'
