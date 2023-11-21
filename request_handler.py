@@ -26,6 +26,8 @@ def handle(event, context):
     reply = {
         "message": "Hello {}!".format(body["name"])
     }
+    if email:
+        reply["email"] = email
     return {
         "statusCode": 200,
         "body": json.dumps(reply)
