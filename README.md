@@ -1,6 +1,41 @@
 # AWS Lambda Demo
 
-This is a demo application tha runs on AWS Lambda.
+This is a demo application tha runs on AWS Lambda. See [this repo](https://github.com/diegosogari/aws-infra) for details on the infrastructure.
+
+## Examples
+
+### Unauthenticated
+
+```shell
+curl -X POST 'https://demo.sogari.dev' --data '{"name": "My Name"}' ^
+    --header 'Content-Type: application/json'
+```
+
+Result:
+
+```json
+{"message": "Hello My Name!"}
+```
+
+### Authenticated
+
+1. Sign-up or sign-in at https://demo.sogari.dev/login.
+2. Get the cookie values obtained by your browser: `chrome://settings/cookies/detail?site=demo.sogari.dev`
+3. Set cookies in HTTP header.
+
+```shell
+$COOKIE0='...'
+$COOKIE1='...'
+curl -X POST 'https://demo.sogari.dev' --data '{"name": "My Name"}' ^
+    --header 'Content-Type: application/json' ^
+    --header "Cookie: AWSELBAuthSessionCookie-0=$COOKIE0;AWSELBAuthSessionCookie-1=$COOKIE1"
+```
+
+Result:
+
+```json
+{"message": "Hello My Name!", "email": "<your email>"}
+```
 
 ## Stack
 
@@ -18,10 +53,10 @@ This is a demo application tha runs on AWS Lambda.
 
 The top-level directory is where the lambda functions live:
 
-- `request_handler`: inbound adapter for the public API
-- `command_handler`: inbound adapter for internal commands
-- `event_consumer`: inbound adapter for consuming domain events
-- `event_publisher`: outbound adapter for publishing domain events
+- [`request_handler.py`](request_handler.py): inbound adapter for the public API
+- [`command_handler.py`](command_handler.py): inbound adapter for internal commands
+- [`event_consumer.py`](event_consumer.py): inbound adapter for consuming domain events
+- [`event_publisher.py`](event_publisher.py): outbound adapter for publishing domain events
 
 Most of the business logic is contained in the subdirectories:
 
