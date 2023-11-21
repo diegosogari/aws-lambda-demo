@@ -44,7 +44,7 @@ jobs:
           pip install -r requirements.txt
           python -m py_compile *.py
           zip code.zip *.py */*.py
-          aws s3api put-object --bucket $S3_BUCKET --key layers/demo/code.zip --body code.zip --checksum-algorithm SHA256
+          aws s3api put-object --bucket $S3_BUCKET --key functions/demo/code.zip --body code.zip --checksum-algorithm SHA256
 
       - if: steps.paths.outputs.dependencies == 'true'
         name: Package and upload the dependencies
